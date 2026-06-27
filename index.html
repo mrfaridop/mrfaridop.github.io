@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meri Website</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #6c63ff, #3ecfcf);
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 { font-size: 1.8rem; }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin-left: 20px;
+      font-weight: 500;
+    }
+
+    .hero {
+      text-align: center;
+      padding: 100px 20px;
+      background: linear-gradient(180deg, #1a1a2e, #0f0f0f);
+    }
+
+    .hero h2 {
+      font-size: 3rem;
+      background: linear-gradient(135deg, #6c63ff, #3ecfcf);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+    }
+
+    .hero p {
+      font-size: 1.2rem;
+      color: #aaa;
+      max-width: 500px;
+      margin: 0 auto 30px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #6c63ff, #3ecfcf);
+      color: white;
+      padding: 14px 32px;
+      border: none;
+      border-radius: 30px;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .cards {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      padding: 60px 20px;
+      flex-wrap: wrap;
+    }
+
+    .card {
+      background: #1e1e1e;
+      border-radius: 16px;
+      padding: 30px;
+      width: 260px;
+      text-align: center;
+      border: 1px solid #333;
+      transition: transform 0.3s;
+    }
+
+    .card:hover { transform: translateY(-6px); }
+
+    .card .icon { font-size: 2.5rem; margin-bottom: 14px; }
+    .card h3 { margin-bottom: 10px; font-size: 1.2rem; }
+    .card p { color: #aaa; font-size: 0.95rem; }
+
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: #555;
+      border-top: 1px solid #222;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>MyWebsite</h1>
+    <nav>
+      <a href="#">Home</a>
+      <a href="#">About</a>
+      <a href="#">Contact</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h2>Welcome to My Page</h2>
+    <p>Yeh meri pehli GitHub website hai. Simple, clean aur mobile-friendly!</p>
+    <a href="#" class="btn">Get Started</a>
+  </section>
+
+  <section class="cards">
+    <div class="card">
+      <div class="icon">🚀</div>
+      <h3>Fast</h3>
+      <p>Pure HTML CSS — koi framework nahi, super fast load.</p>
+    </div>
+    <div class="card">
+      <div class="icon">📱</div>
+      <h3>Mobile Friendly</h3>
+      <p>Har screen size par perfectly fit hoti hai.</p>
+    </div>
+    <div class="card">
+      <div class="icon">🎨</div>
+      <h3>Clean Design</h3>
+      <p>Dark theme with gradient — modern aur stylish look.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>© 2026 MyWebsite — Made with ❤️</p>
+  </footer>
+
+</body>
+</html>
