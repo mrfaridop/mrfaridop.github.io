@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Room</title>
+  <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0f;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .logo { font-size: 2.2rem; margin-bottom: 8px; }
+    h1 { font-size: 1.7rem; font-weight: 700; margin-bottom: 4px; }
+    .tagline { color: #555; font-size: 0.9rem; margin-bottom: 32px; }
+    .card {
+      background: #13131a;
+      border: 1px solid #1e1e28;
+      border-radius: 22px;
+      padding: 28px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .input {
+      background: #1a1a24;
+      border: 1px solid #2a2a38;
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: #fff;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 12px;
+    }
+    .input:focus { border-color: #7c5cfc; }
+    .input::placeholder { color: #444; }
+    .btn {
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .btn-primary { background: linear-gradient(135deg, #7c5cfc, #5b8dee); color: white; }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-secondary { background: #1a1a24; color: #aaa; border: 1px solid #2a2a38; }
+    .btn-danger { background: #2a1218; color: #ff4d6d; border: 1px solid #3d1a22; width: auto; padding: 14px 20px; margin-bottom: 0; }
+    .btn-mute { background: #1a1a24; color: #aaa; border: 1px solid #2a2a38; flex: 1; margin-bottom: 0; }
+    .btn-mute.muted { color: #ff4d6d; border-color: #3d1a22; background: #2a1218; }
+    .divider { display: flex; align-items: center; gap: 12px; color: #333; font-size: 0.8rem; margin: 4px 0 12px; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #1e1e28; }
+    .row { display: flex; gap: 10px; margin-bottom: 12px; }
+    .row .input { margin-bottom: 0; }
+    #room-screen { display: none; flex-direction: column; gap: 14px; }
+    .room-id-box {
+      background: #1a1a24; border: 1px solid #2a2a38; border-radius: 12px;
+      padding: 12px 16px; display: flex; align-items: center;
+      justify-content: space-between; cursor: pointer;
+    }
+    .room-label { font-size: 0.72rem; color: #555; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+    .room-id-val { font-size: 1.1rem; font-weight: 700; color: #7c5cfc; letter-spacing: 2px; }
+    .copy-btn { font-size: 0.8rem; color: #555; }
+    .section-label { font-size: 0.72rem; color: #444; text-transform: uppercase; letter-spacing: 1px; }
+    .participants { display: flex; flex-direction: column; gap: 8px; min-height: 60px; }
+    .participant {
+      display: flex; align-items: center; gap: 12px;
+      background: #1a1a24; border: 1px solid #222; border-radius: 14px;
+      padding: 12px 14px; transition: border-color 0.3s;
+      animation: fadeIn 0.3s ease;
+    }
+    .participant.speaking { border-color: #7c5cfc; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, #7c5cfc, #5b8dee);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1.1rem; flex-shrink: 0;
+    }
+    .avatar.muted { background: #222; color: #555; }
+    .p-info { flex: 1; }
+    .p-name { font-weight: 600; font-size: 0.95rem; }
+    .p-status { font-size: 0.72rem; color: #555; margin-top: 2px; }
+    .mic-icon { font-size: 1rem; }
+    .controls { display: flex; gap: 10px; }
+    .status { text-align: center; font-size: 0.8rem; padding: 8px; border-radius: 8px; }
+    .status.ok { color: #4ade80; }
+    .status.err { color: #ff4d6d; }
+    .status.info { color: #555; }
+    .pulse { display: inline-block; width: 7px; height: 7px; background: #4ade80; border-radius: 50%; margin-right: 6px; animation: blink 1.4s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .empty { text-align: center; color: #333; font-size: 0.88rem; padding: 20px; }
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1e1e28; border: 1px solid #2a2a38;
+      color: #fff; padding: 12px 22px; border-radius: 14px;
+      font-size: 0.85rem; transition: transform 0.3s ease;
+      z-index: 999; white-space: nowrap; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<div class="logo">🎙️</div>
+<h1>Voice Room</h1>
+<p class="tagline">Instant voice chat — no app needed</p>
+
+<div class="card">
+  <div id="setup-screen">
+    <input class="input" id="my-name" placeholder="Tumhara naam" maxlength="20" />
+    <button class="btn btn-primary" onclick="createRoom()">🚀 Naya Room Banao</button>
+    <div class="divider">ya join karo</div>
+    <div class="row">
+      <input class="input" id="join-id" placeholder="Room ID" maxlength="8" style="text-transform:uppercase" />
+      <button class="btn btn-secondary" onclick="joinRoom()" style="width:auto;margin-bottom:0;padding:14px 18px;">Join</button>
+    </div>
+    <div class="status info" id="setup-status">Initializing...</div>
+  </div>
+
+  <div id="room-screen">
+    <div>
+      <div class="room-label">Room ID — tap to copy & share</div>
+      <div class="room-id-box" onclick="copyId()">
+        <div>
+          <div class="room-id-val" id="show-room-id">------</div>
+        </div>
+        <div class="copy-btn">📋 Copy</div>
+      </div>
+    </div>
+    <div class="section-label">Participants</div>
+    <div class="participants" id="p-list">
+      <div class="empty">Waiting for others...</div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-mute" id="mute-btn" onclick="toggleMute()">🎙️ Mute</button>
+      <button class="btn btn-danger" onclick="leaveRoom()">Leave</button>
+    </div>
+    <div class="status ok" id="room-status"><span class="pulse"></span>Live</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const APP_ID = '42357ea5a9d04652b6b5853102c6ed1d';
+
+  let client = null;
+  let localTrack = null;
+  let isMuted = false;
+  let roomId = null;
+  let myName = '';
+  let participants = {};
+
+  function genId() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+
+  async function createRoom() {
+    myName = document.getElementById('my-name').value.trim();
+    if (!myName) { toast('Pehle apna naam daalo!'); return; }
+    roomId = genId();
+    await startCall(roomId);
+  }
+
+  async function joinRoom() {
+    myName = document.getElementById('my-name').value.trim();
+    const rid = document.getElementById('join-id').value.trim().toUpperCase();
+    if (!myName) { toast('Pehle apna naam daalo!'); return; }
+    if (!rid) { toast('Room ID daalo!'); return; }
+    roomId = rid;
+    await startCall(roomId);
+  }
+
+  async function startCall(channel) {
+    try {
+      setStatus('Connecting...');
+      client = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
+
+      client.on('user-published', async (user, mediaType) => {
+        await client.subscribe(user, mediaType);
+        if (mediaType === 'audio') {
+          user.audioTrack.play();
+          const name = participants[user.uid] || ('User ' + user.uid);
+          addParticipantUI(user.uid, name);
+          toast(name + ' joined! 🎙️');
+        }
+      });
+
+      client.on('user-unpublished', (user) => {
+        removeParticipantUI(user.uid);
+      });
+
+      client.on('user-left', (user) => {
+        const name = participants[user.uid] || 'Someone';
+        removeParticipantUI(user.uid);
+        delete participants[user.uid];
+        toast(name + ' left');
+      });
+
+      const uid = Math.floor(Math.random() * 100000);
+      participants[uid] = myName;
+
+      await client.join(APP_ID, channel, null, uid);
+      localTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      await client.publish([localTrack]);
+
+      document.getElementById('setup-screen').style.display = 'none';
+      document.getElementById('room-screen').style.display = 'flex';
+      document.getElementById('show-room-id').textContent = channel;
+
+      addParticipantUI('me', myName + ' (You)', true);
+      toast('Room ready! ID: ' + channel);
+
+    } catch (e) {
+      console.error(e);
+      setStatus('❌ ' + e.message);
+      toast('Error: ' + e.message);
+    }
+  }
+
+  function addParticipantUI(uid, name, isMe = false) {
+    const list = document.getElementById('p-list');
+    const empty = list.querySelector('.empty');
+    if (empty) empty.remove();
+    if (document.getElementById('p-' + uid)) return;
+    const initial = name.charAt(0).toUpperCase();
+    const div = document.createElement('div');
+    div.className = 'participant';
+    div.id = 'p-' + uid;
+    div.innerHTML = `
+      <div class="avatar" id="av-${uid}">${initial}</div>
+      <div class="p-info">
+        <div class="p-name">${name}</div>
+        <div class="p-status">${isMe ? 'You' : 'Connected'}</div>
+      </div>
+      <div class="mic-icon" id="mic-${uid}">🎙️</div>
+    `;
+    list.appendChild(div);
+  }
+
+  function removeParticipantUI(uid) {
+    const el = document.getElementById('p-' + uid);
+    if (el) el.remove();
+    const list = document.getElementById('p-list');
+    if (!list.children.length) {
+      list.innerHTML = '<div class="empty">Waiting for others...</div>';
+    }
+  }
+
+  function toggleMute() {
+    if (!localTrack) return;
+    isMuted = !isMuted;
+    localTrack.setEnabled(!isMuted);
+    const btn = document.getElementById('mute-btn');
+    const mic = document.getElementById('mic-me');
+    const av = document.getElementById('av-me');
+    if (isMuted) {
+      btn.textContent = '🔇 Unmute';
+      btn.classList.add('muted');
+      if (mic) mic.textContent = '🔇';
+      if (av) av.classList.add('muted');
+    } else {
+      btn.textContent = '🎙️ Mute';
+      btn.classList.remove('muted');
+      if (mic) mic.textContent = '🎙️';
+      if (av) av.classList.remove('muted');
+    }
+  }
+
+  async function leaveRoom() {
+    if (localTrack) { localTrack.stop(); localTrack.close(); }
+    if (client) await client.leave();
+    client = null; localTrack = null; isMuted = false;
+    roomId = null; participants = {};
+    document.getElementById('room-screen').style.display = 'none';
+    document.getElementById('setup-screen').style.display = 'block';
+    document.getElementById('p-list').innerHTML = '<div class="empty">Waiting for others...</div>';
+    document.getElementById('mute-btn').textContent = '🎙️ Mute';
+    document.getElementById('mute-btn').classList.remove('muted');
+    setStatus('Ready ✅');
+    toast('Room left!');
+  }
+
+  function copyId() {
+    if (!roomId) return;
+    navigator.clipboard.writeText(roomId).then(() => toast('Copied! Share karo 🔗'));
+  }
+
+  function setStatus(msg) {
+    const el = document.getElementById('setup-status');
+    el.textContent = msg;
+    el.className = 'status ' + (msg.includes('❌') ? 'err' : msg.includes('✅') || msg.includes('Ready') ? 'ok' : 'info');
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  window.onload = () => {
+    if (typeof AgoraRTC !== 'undefined') {
+      setStatus('Ready ✅');
+    } else {
+      setStatus('❌ SDK load failed — check internet');
+    }
+  };
+</script>
+</body>
+</html>
