@@ -3,165 +3,309 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Login & Mails</title>
-    <!-- Google Identity Services Library -->
+    <title>Google Dashboard</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
+        * { box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #eef2f6;
             margin: 0;
-            background: #f0f2f5;
             padding: 15px;
-            box-sizing: border-box;
+            color: #333;
         }
-        .card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-width: 480px;
-            width: 100%;
-            text-align: center;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            min-height: 80vh;
         }
-        #login-btn {
+        h2 { text-align: center; margin-top: 5px; color: #202124; }
+        .login-box { text-align: center; margin-top: 100px; }
+        .btn-login {
             background: #1a73e8;
             color: white;
             border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-size: 15px;
-            font-weight: bold;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
             cursor: pointer;
+            font-weight: 500;
         }
-        #mail-section {
-            display: none;
-            text-align: left;
-            margin-top: 15px;
+        /* Folder Grid View */
+        #dashboard-view { display: none; }
+        .folder-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
         }
-        .mail-item {
-            background: #f8f9fa;
-            border: 1px solid #e0e0e0;
+        .folder-card {
+            background: #f8fafd;
+            border: 1px solid #dce3eb;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .folder-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            background: #ffffff;
+        }
+        .folder-icon { font-size: 32px; margin-bottom: 8px; }
+        .folder-title { font-weight: 600; font-size: 15px; color: #1f2937; }
+
+        /* Detail/Inside Folder View */
+        #detail-view { display: none; margin-top: 15px; }
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .btn-back {
+            background: #ea4335;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .item-card {
+            background: #f9fbfd;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
             padding: 10px 12px;
             margin-bottom: 10px;
             font-size: 13px;
         }
-        .mail-from {
-            font-weight: bold;
-            color: #1a73e8;
-            margin-bottom: 4px;
-        }
-        .mail-subject {
-            font-weight: bold;
-            color: #202124;
-            margin-bottom: 4px;
-        }
-        .mail-snippet {
-            color: #5f6368;
-            line-height: 1.4;
-        }
-        .logout-btn {
-            background: #d93025;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 10px;
-        }
+        .item-title { font-weight: bold; color: #1a73e8; margin-bottom: 3px; }
+        .item-sub { color: #555; }
+        .loading { text-align: center; color: #666; font-style: italic; padding: 20px 0; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>Gmail Inbox Viewer</h2>
-        
-        <button id="login-btn" onclick="handleAuthClick()">Google से लॉगिन करें और मेल देखें</button>
+<div class="container">
+    <h2>Google Dashboard</h2>
 
-        <div id="mail-section">
-            <h3 style="margin-top:0;">हाल के ईमेल्स:</h3>
-            <div id="mail-list">मेल लोड हो रहे हैं...</div>
-            <button class="logout-btn" onclick="logout()">लॉगआउट</button>
+    <!-- 1. लॉगिन स्क्रीन -->
+    <div id="login-view" class="login-box">
+        <p>अपने सभी डेटा को फ़ोल्डर व्यू में एक्सेस करने के लिए लॉगिन करें:</p>
+        <button class="btn-login" onclick="handleAuth()">Google से कनेक्ट करें</button>
+    </div>
+
+    <!-- 2. मेन फ़ोल्डर ग्रिड स्क्रीन -->
+    <div id="dashboard-view">
+        <div class="folder-grid">
+            <div class="folder-card" onclick="openFolder('gmail')">
+                <div class="folder-icon">✉️</div>
+                <div class="folder-title">Gmail</div>
+            </div>
+            <div class="folder-card" onclick="openFolder('drive')">
+                <div class="folder-icon">📁</div>
+                <div class="folder-title">Google Drive</div>
+            </div>
+            <div class="folder-card" onclick="openFolder('sheets')">
+                <div class="folder-icon">📊</div>
+                <div class="folder-title">Google Sheets</div>
+            </div>
+            <div class="folder-card" onclick="openFolder('contacts')">
+                <div class="folder-icon">👥</div>
+                <div class="folder-title">Contacts</div>
+            </div>
         </div>
     </div>
 
-    <script>
-        // आपकी Google Client ID
-        const CLIENT_ID = '806916104766-unei3nsapvh65ovbjek34me5g2shs2de.apps.googleusercontent.com';
-        const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
+    <!-- 3. किसी फ़ोल्डर के अंदर का डेटा व्यू -->
+    <div id="detail-view">
+        <div class="top-bar">
+            <button class="btn-back" onclick="backToFolders()">← वापस फ़ोल्डर्स</button>
+            <h3 id="current-folder-title" style="margin:0; font-size: 16px;">फ़ोल्डर डेटा</h3>
+        </div>
+        <div id="data-container"></div>
+    </div>
+</div>
 
-        let tokenClient;
+<script>
+    // आपकी Client ID
+    const CLIENT_ID = '806916104766-unei3nsapvh65ovbjek34me5g2shs2de.apps.googleusercontent.com';
 
-        window.onload = function() {
-            tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID,
-                scope: SCOPES,
-                callback: (tokenResponse) => {
-                    if (tokenResponse && tokenResponse.access_token) {
-                        document.getElementById('login-btn').style.display = 'none';
-                        document.getElementById('mail-section').style.display = 'block';
-                        fetchLatestEmails(tokenResponse.access_token);
-                    }
-                },
-            });
-        };
+    // सभी ज़रूरी Scopes (Gmail, Drive, Contacts)
+    const SCOPES = [
+        'https://www.googleapis.com/auth/gmail.readonly',
+        'https://www.googleapis.com/auth/drive.metadata.readonly',
+        'https://www.googleapis.com/auth/contacts.readonly'
+    ].join(' ');
 
-        function handleAuthClick() {
-            tokenClient.requestAccessToken();
-        }
+    let tokenClient;
+    let ACCESS_TOKEN = null;
 
-        async function fetchLatestEmails(accessToken) {
-            const mailListDiv = document.getElementById('mail-list');
-            try {
-                const listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=5', {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                const listData = await listRes.json();
-
-                if (!listData.messages || listData.messages.length === 0) {
-                    mailListDiv.innerHTML = '<p>कोई ईमेल नहीं मिला।</p>';
-                    return;
+    window.onload = function() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: (resp) => {
+                if (resp && resp.access_token) {
+                    ACCESS_TOKEN = resp.access_token;
+                    document.getElementById('login-view').style.display = 'none';
+                    document.getElementById('dashboard-view').style.display = 'block';
                 }
-
-                mailListDiv.innerHTML = '';
-
-                for (let msg of listData.messages) {
-                    const msgRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
-                        headers: { 'Authorization': `Bearer ${accessToken}` }
-                    });
-                    const msgData = await msgRes.json();
-
-                    let fromHeader = msgData.payload.headers.find(h => h.name === 'From');
-                    let subjectHeader = msgData.payload.headers.find(h => h.name === 'Subject');
-
-                    let from = fromHeader ? fromHeader.value : 'अज्ञात';
-                    let subject = subjectHeader ? subjectHeader.value : '(बिना विषय)';
-                    let snippet = msgData.snippet;
-
-                    const item = document.createElement('div');
-                    item.className = 'mail-item';
-                    item.innerHTML = `
-                        <div class="mail-from">${from}</div>
-                        <div class="mail-subject">${subject}</div>
-                        <div class="mail-snippet">${snippet}</div>
-                    `;
-                    mailListDiv.appendChild(item);
-                }
-            } catch (err) {
-                console.error(err);
-                mailListDiv.innerHTML = '<p style="color:red;">ईमेल लोड करने में समस्या आई।</p>';
             }
-        }
+        });
+    };
 
-        function logout() {
-            document.getElementById('login-btn').style.display = 'block';
-            document.getElementById('mail-section').style.display = 'none';
-            document.getElementById('mail-list').innerHTML = 'मेल लोड हो रहे हैं...';
+    function handleAuth() {
+        tokenClient.requestAccessToken();
+    }
+
+    function backToFolders() {
+        document.getElementById('detail-view').style.display = 'none';
+        document.getElementById('dashboard-view').style.display = 'block';
+    }
+
+    // फ़ोल्डर पर क्लिक करने पर डेटा लोड करना
+    function openFolder(type) {
+        document.getElementById('dashboard-view').style.display = 'none';
+        document.getElementById('detail-view').style.display = 'block';
+        const container = document.getElementById('data-container');
+        container.innerHTML = '<div class="loading">डेटा लोड हो रहा है...</div>';
+
+        if (type === 'gmail') {
+            document.getElementById('current-folder-title').innerText = 'Gmail (हाल के ईमेल्स)';
+            loadGmail();
+        } else if (type === 'drive') {
+            document.getElementById('current-folder-title').innerText = 'Google Drive (हाल की फ़ाइलें)';
+            loadDriveFiles();
+        } else if (type === 'sheets') {
+            document.getElementById('current-folder-title').innerText = 'Google Sheets (स्प्रेडशीट्स)';
+            loadSheets();
+        } else if (type === 'contacts') {
+            document.getElementById('current-folder-title').innerText = 'Google Contacts (संपर्क)';
+            loadContacts();
         }
-    </script>
+    }
+
+    // 1. Gmail लोड करना
+    async function loadGmail() {
+        const container = document.getElementById('data-container');
+        try {
+            const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=6', {
+                headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+            });
+            const data = await res.json();
+            if (!data.messages) { container.innerHTML = '<p>कोई ईमेल नहीं मिला।</p>'; return; }
+
+            container.innerHTML = '';
+            for (let m of data.messages) {
+                const itemRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}`, {
+                    headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+                });
+                const item = await itemRes.json();
+                let sub = item.payload.headers.find(h => h.name === 'Subject')?.value || '(No Subject)';
+                let from = item.payload.headers.find(h => h.name === 'From')?.value || 'Unknown';
+                
+                container.innerHTML += `
+                    <div class="item-card">
+                        <div class="item-title">${sub}</div>
+                        <div class="item-sub"><strong>From:</strong> ${from}</div>
+                        <div style="color:#777; margin-top:3px;">${item.snippet}</div>
+                    </div>
+                `;
+            }
+        } catch (e) {
+            container.innerHTML = '<p style="color:red;">Gmail लोड करने में त्रुटि आई।</p>';
+        }
+    }
+
+    // 2. Google Drive फ़ाइलें लोड करना
+    async function loadDriveFiles() {
+        const container = document.getElementById('data-container');
+        try {
+            const res = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=7&fields=files(id,name,mimeType)', {
+                headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+            });
+            const data = await res.json();
+            if (!data.files || data.files.length === 0) {
+                container.innerHTML = '<p>Drive में कोई फ़ाइल नहीं मिली।</p>';
+                return;
+            }
+            container.innerHTML = '';
+            data.files.forEach(f => {
+                container.innerHTML += `
+                    <div class="item-card">
+                        <div class="item-title">📄 ${f.name}</div>
+                        <div class="item-sub">Type: ${f.mimeType.split('.').pop()}</div>
+                    </div>
+                `;
+            });
+        } catch (e) {
+            container.innerHTML = '<p style="color:red;">Drive लोड करने में त्रुटि। (सुनिश्चित करें कि Drive API ऑन है)</p>';
+        }
+    }
+
+    // 3. Google Sheets लोड करना (Drive से फ़िल्टर करके)
+    async function loadSheets() {
+        const container = document.getElementById('data-container');
+        try {
+            const query = encodeURIComponent("mimeType='application/vnd.google-apps.spreadsheet'");
+            const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&pageSize=7&fields=files(id,name)`, {
+                headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+            });
+            const data = await res.json();
+            if (!data.files || data.files.length === 0) {
+                container.innerHTML = '<p>कोई Google Sheets फ़ाइल नहीं मिली।</p>';
+                return;
+            }
+            container.innerHTML = '';
+            data.files.forEach(s => {
+                container.innerHTML += `
+                    <div class="item-card">
+                        <div class="item-title">📊 ${s.name}</div>
+                    </div>
+                `;
+            });
+        } catch (e) {
+            container.innerHTML = '<p style="color:red;">Sheets लोड करने में त्रुटि।</p>';
+        }
+    }
+
+    // 4. Contacts लोड करना
+    async function loadContacts() {
+        const container = document.getElementById('data-container');
+        try {
+            const res = await fetch('https://people.googleapis.com/v1/people/me/connections?pageSize=10&personFields=names,emailAddresses,phoneNumbers', {
+                headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+            });
+            const data = await res.json();
+            if (!data.connections || data.connections.length === 0) {
+                container.innerHTML = '<p>कोई संपर्क (Contact) नहीं मिला।</p>';
+                return;
+            }
+            container.innerHTML = '';
+            data.connections.forEach(c => {
+                let name = c.names ? c.names[0].displayName : 'अज्ञात';
+                let phone = c.phoneNumbers ? c.phoneNumbers[0].value : 'नंबर नहीं है';
+                container.innerHTML += `
+                    <div class="item-card">
+                        <div class="item-title">👤 ${name}</div>
+                        <div class="item-sub">📞 ${phone}</div>
+                    </div>
+                `;
+            });
+        } catch (e) {
+            container.innerHTML = '<p style="color:red;">Contacts लोड करने में त्रुटि। (सुनिश्चित करें कि People API ऑन है)</p>';
+        }
+    }
+</script>
+
 </body>
 </html>
