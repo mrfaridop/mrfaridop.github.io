@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Login Page</title>
+    <title>Google Login & Mails</title>
+    <!-- Google Identity Services Library -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         body {
@@ -14,74 +15,152 @@
             min-height: 100vh;
             margin: 0;
             background: #f0f2f5;
+            padding: 15px;
+            box-sizing: border-box;
         }
         .card {
             background: white;
-            padding: 30px;
+            padding: 25px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 350px;
+            max-width: 480px;
             width: 100%;
+            text-align: center;
         }
-        #user-info { display: none; margin-top: 20px; }
-        #user-pic { border-radius: 50%; width: 80px; height: 80px; margin-top: 10px; }
-        button {
-            margin-top: 15px;
-            padding: 8px 16px;
+        #login-btn {
+            background: #1a73e8;
+            color: white;
             border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #mail-section {
+            display: none;
+            text-align: left;
+            margin-top: 15px;
+        }
+        .mail-item {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+        .mail-from {
+            font-weight: bold;
+            color: #1a73e8;
+            margin-bottom: 4px;
+        }
+        .mail-subject {
+            font-weight: bold;
+            color: #202124;
+            margin-bottom: 4px;
+        }
+        .mail-snippet {
+            color: #5f6368;
+            line-height: 1.4;
+        }
+        .logout-btn {
             background: #d93025;
             color: white;
+            border: none;
+            padding: 8px 16px;
             border-radius: 6px;
             cursor: pointer;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <h2>स्वागत है</h2>
+        <h2>Gmail Inbox Viewer</h2>
         
-        <!-- Google Sign-In Button -->
-        <div id="g_id_onload"
-             data-client_id="806916104766-unei3nsapvh65ovbjek34me5g2shs2de.apps.googleusercontent.com"
-             data-callback="handleCredentialResponse"
-             data-auto_prompt="false">
-        </div>
-        <div class="g_id_signin" data-type="standard" data-size="large"></div>
+        <button id="login-btn" onclick="handleAuthClick()">Google से लॉगिन करें और मेल देखें</button>
 
-        <!-- Logged-in User Profile -->
-        <div id="user-info">
-            <h3 id="user-name"></h3>
-            <p id="user-email"></p>
-            <img id="user-pic" src="" alt="Profile">
-            <br>
-            <button onclick="logout()">लॉगआउट</button>
+        <div id="mail-section">
+            <h3 style="margin-top:0;">हाल के ईमेल्स:</h3>
+            <div id="mail-list">मेल लोड हो रहे हैं...</div>
+            <button class="logout-btn" onclick="logout()">लॉगआउट</button>
         </div>
     </div>
 
     <script>
-        function decodeJwt(token) {
-            let base64Url = token.split('.')[1];
-            let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
+        // आपकी Google Client ID
+        const CLIENT_ID = '806916104766-une1l5r16gfv05qf4skn9r9g97g83hdi.apps.googleusercontent.com';
+        const SCOPES = 'https://www.googleapis.com/auth/gmail.readonly';
+
+        let tokenClient;
+
+        window.onload = function() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: (tokenResponse) => {
+                    if (tokenResponse && tokenResponse.access_token) {
+                        document.getElementById('login-btn').style.display = 'none';
+                        document.getElementById('mail-section').style.display = 'block';
+                        fetchLatestEmails(tokenResponse.access_token);
+                    }
+                },
+            });
+        };
+
+        function handleAuthClick() {
+            tokenClient.requestAccessToken();
         }
 
-        function handleCredentialResponse(response) {
-            const user = decodeJwt(response.credential);
-            document.querySelector('.g_id_signin').style.display = 'none';
-            document.getElementById('user-info').style.display = 'block';
-            document.getElementById('user-name').innerText = user.name;
-            document.getElementById('user-email').innerText = user.email;
-            document.getElementById('user-pic').src = user.picture;
+        async function fetchLatestEmails(accessToken) {
+            const mailListDiv = document.getElementById('mail-list');
+            try {
+                const listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=5', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                const listData = await listRes.json();
+
+                if (!listData.messages || listData.messages.length === 0) {
+                    mailListDiv.innerHTML = '<p>कोई ईमेल नहीं मिला।</p>';
+                    return;
+                }
+
+                mailListDiv.innerHTML = '';
+
+                for (let msg of listData.messages) {
+                    const msgRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    const msgData = await msgRes.json();
+
+                    let fromHeader = msgData.payload.headers.find(h => h.name === 'From');
+                    let subjectHeader = msgData.payload.headers.find(h => h.name === 'Subject');
+
+                    let from = fromHeader ? fromHeader.value : 'अज्ञात';
+                    let subject = subjectHeader ? subjectHeader.value : '(बिना विषय)';
+                    let snippet = msgData.snippet;
+
+                    const item = document.createElement('div');
+                    item.className = 'mail-item';
+                    item.innerHTML = `
+                        <div class="mail-from">${from}</div>
+                        <div class="mail-subject">${subject}</div>
+                        <div class="mail-snippet">${snippet}</div>
+                    `;
+                    mailListDiv.appendChild(item);
+                }
+            } catch (err) {
+                console.error(err);
+                mailListDiv.innerHTML = '<p style="color:red;">ईमेल लोड करने में समस्या आई।</p>';
+            }
         }
 
         function logout() {
-            document.querySelector('.g_id_signin').style.display = 'block';
-            document.getElementById('user-info').style.display = 'none';
+            document.getElementById('login-btn').style.display = 'block';
+            document.getElementById('mail-section').style.display = 'none';
+            document.getElementById('mail-list').innerHTML = 'मेल लोड हो रहे हैं...';
         }
     </script>
 </body>
