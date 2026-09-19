@@ -122,6 +122,10 @@
                 <div class="folder-icon">👥</div>
                 <div class="folder-title">Contacts</div>
             </div>
+            <div class="folder-card" onclick="openFolder('youtube')" style="grid-column: span 2;">
+                <div class="folder-icon">▶️</div>
+                <div class="folder-title">YouTube Channel</div>
+            </div>
         </div>
     </div>
 
@@ -137,13 +141,14 @@
 
 <script>
     // आपकी Client ID
-    const CLIENT_ID = '806916104766-unei3nsapvh65ovbjek34me5g2shs2de.apps.googleusercontent.com';
+    const CLIENT_ID = '806916104766-une1l5r16gfv05qf4skn9r9g97g83hdi.apps.googleusercontent.com';
 
-    // सभी ज़रूरी Scopes (Gmail, Drive, Contacts)
+    // Scopes (Gmail, Drive, Contacts, YouTube)
     const SCOPES = [
         'https://www.googleapis.com/auth/gmail.readonly',
         'https://www.googleapis.com/auth/drive.metadata.readonly',
-        'https://www.googleapis.com/auth/contacts.readonly'
+        'https://www.googleapis.com/auth/contacts.readonly',
+        'https://www.googleapis.com/auth/youtube.readonly'
     ].join(' ');
 
     let tokenClient;
@@ -172,7 +177,6 @@
         document.getElementById('dashboard-view').style.display = 'block';
     }
 
-    // फ़ोल्डर पर क्लिक करने पर डेटा लोड करना
     function openFolder(type) {
         document.getElementById('dashboard-view').style.display = 'none';
         document.getElementById('detail-view').style.display = 'block';
@@ -191,6 +195,9 @@
         } else if (type === 'contacts') {
             document.getElementById('current-folder-title').innerText = 'Google Contacts (संपर्क)';
             loadContacts();
+        } else if (type === 'youtube') {
+            document.getElementById('current-folder-title').innerText = 'YouTube (चैनल और वीडियो)';
+            loadYouTube();
         }
     }
 
@@ -226,7 +233,7 @@
         }
     }
 
-    // 2. Google Drive फ़ाइलें लोड करना
+    // 2. Google Drive
     async function loadDriveFiles() {
         const container = document.getElementById('data-container');
         try {
@@ -248,11 +255,11 @@
                 `;
             });
         } catch (e) {
-            container.innerHTML = '<p style="color:red;">Drive लोड करने में त्रुटि। (सुनिश्चित करें कि Drive API ऑन है)</p>';
+            container.innerHTML = '<p style="color:red;">Drive लोड करने में त्रुटि।</p>';
         }
     }
 
-    // 3. Google Sheets लोड करना (Drive से फ़िल्टर करके)
+    // 3. Google Sheets
     async function loadSheets() {
         const container = document.getElementById('data-container');
         try {
@@ -278,11 +285,11 @@
         }
     }
 
-    // 4. Contacts लोड करना
+    // 4. Contacts
     async function loadContacts() {
         const container = document.getElementById('data-container');
         try {
-            const res = await fetch('https://people.googleapis.com/v1/people/me/connections?pageSize=10&personFields=names,emailAddresses,phoneNumbers', {
+            const res = await fetch('https://people.googleapis.com/v1/people/me/connections?pageSize=10&personFields=names,phoneNumbers', {
                 headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
             });
             const data = await res.json();
@@ -302,7 +309,43 @@
                 `;
             });
         } catch (e) {
-            container.innerHTML = '<p style="color:red;">Contacts लोड करने में त्रुटि। (सुनिश्चित करें कि People API ऑन है)</p>';
+            container.innerHTML = '<p style="color:red;">Contacts लोड करने में त्रुटि।</p>';
+        }
+    }
+
+    // 5. YouTube चैनल डेटा
+    async function loadYouTube() {
+        const container = document.getElementById('data-container');
+        try {
+            const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true', {
+                headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+            });
+            const data = await res.json();
+            if (!data.items || data.items.length === 0) {
+                container.innerHTML = '<p>इस अकाउंट पर कोई YouTube चैनल नहीं मिला।</p>';
+                return;
+            }
+
+            const ch = data.items[0];
+            const title = ch.snippet.title;
+            const subs = ch.statistics.subscriberCount;
+            const views = ch.statistics.viewCount;
+            const videoCount = ch.statistics.videoCount;
+            const thumb = ch.snippet.thumbnails.default.url;
+
+            container.innerHTML = `
+                <div class="item-card" style="text-align:center;">
+                    <img src="${thumb}" style="border-radius:50%; width:70px; height:70px; margin-bottom:8px;">
+                    <div class="item-title" style="font-size:16px;">${title}</div>
+                    <div class="item-sub" style="margin-top:6px;">
+                        <strong>Subscribers:</strong> ${subs} | 
+                        <strong>Total Videos:</strong> ${videoCount} | 
+                        <strong>Views:</strong> ${views}
+                    </div>
+                </div>
+            `;
+        } catch (e) {
+            container.innerHTML = '<p style="color:red;">YouTube डेटा लोड करने में त्रुटि। (सुनिश्चित करें कि YouTube Data API v3 ऑन है)</p>';
         }
     }
 </script>
